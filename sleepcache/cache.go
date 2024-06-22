@@ -1,7 +1,7 @@
-package single_node
+package sleepcache
 
 import (
-	"SleepCache/lru"
+	"SleepCache/sleepcache/lru"
 	"sync"
 )
 

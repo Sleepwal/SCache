@@ -1,4 +1,4 @@
-package single_node
+package sleepcache
 
 import (
 	"fmt"
