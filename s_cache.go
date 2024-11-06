@@ -1,6 +1,7 @@
 package main
 
 import (
+	"SleepCache/singleflight"
 	"fmt"
 	"log"
 	"sync"
@@ -22,6 +23,7 @@ type Group struct {
 	getter     Getter
 	mainCache  cache
 	peerPicker PeerPicker
+	loader     *singleflight.Group // 确保 同一时间一个key只被一个请求获取
 }
 
 var (
@@ -48,6 +50,7 @@ func NewGroup(name string, cacheBytes int64, getter Getter) *Group {
 		mainCache: cache{
 			cacheBytes: cacheBytes,
 		},
+		loader: &singleflight.Group{},
 	}
 
 	groups[name] = g
@@ -86,15 +89,23 @@ func (g *Group) RegisterPeers(peers PeerPicker) {
 }
 
 func (g *Group) load(key string) (value ByteView, err error) {
-	if g.peerPicker != nil {
-		if peer, ok := g.peerPicker.PickPeer(key); ok { // 根据key选择一个节点
-			if value, err := g.getFromPeer(peer, key); err == nil {
-				return value, nil
+	// 样确保了并发场景下针对相同的 key，load 过程只会调用一次
+	view, err := g.loader.Do(key, func() (interface{}, error) {
+		if g.peerPicker != nil {
+			if peer, ok := g.peerPicker.PickPeer(key); ok { // 根据key选择一个节点
+				if value, err := g.getFromPeer(peer, key); err == nil {
+					return value, nil
+				}
+				log.Println("[SCache] Failed to get form peer, ", err)
 			}
-			log.Println("[SCache] Failed to get form peer, ", err)
 		}
+		return g.getLocally(key)
+	})
+
+	if err == nil {
+		return view.(ByteView), nil
 	}
-	return g.getLocally(key)
+	return
 }
 
 // 从节点中获取值
