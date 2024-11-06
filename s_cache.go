@@ -69,7 +69,7 @@ func (g *Group) Get(key string) (ByteView, error) {
 	}
 	// 从 mainCache 中查找缓存
 	if v, ok := g.mainCache.get(key); ok {
-		log.Println("[SleepCache] hit")
+		log.Println("[SCache] hit")
 		return v, nil
 	}
 	// 没有命中，调用 load 方法

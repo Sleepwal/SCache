@@ -24,6 +24,6 @@ func main() {
 
 	address := "localhost:9999"
 	handler := NewHttpPool(address)
-	log.Println("SleepCache is running at", address)
+	log.Println("SCache is running at", address)
 	log.Fatal(http.ListenAndServe(address, handler))
 }
