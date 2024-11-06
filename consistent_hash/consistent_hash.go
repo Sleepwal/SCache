@@ -9,9 +9,9 @@ import (
 type Hash func(data []byte) uint32
 
 type Map struct {
-	hash     Hash
+	hash     Hash           // Hash 函数
 	replicas int            // 虚拟节点倍数
-	keys     []int          // 已排序
+	keys     []int          // 哈希环，需要排序，放的是虚拟节点
 	hashMap  map[int]string // 虚拟与真实节点的映射表
 }
 
@@ -29,9 +29,9 @@ func New(replicas int, fn Hash) *Map {
 
 // Add 添加真实节点
 func (m *Map) Add(keys ...string) {
-	for _, key := range keys {
+	for _, key := range keys { // 每一个真实节点 key，创建 m.replicas 个虚拟节点
 		for i := 0; i < m.replicas; i++ {
-			hash := int(m.hash([]byte(strconv.Itoa(i) + key)))
+			hash := int(m.hash([]byte(strconv.Itoa(i) + key))) // 添加编号i，区分节点
 			m.keys = append(m.keys, hash)
 			m.hashMap[hash] = key
 		}
@@ -44,8 +44,7 @@ func (m *Map) Get(key string) string {
 		return ""
 	}
 
-	// 计算hash
-	hash := int(m.hash([]byte(key)))
+	hash := int(m.hash([]byte(key))) // 计算hash
 	// 找到第一个匹配的虚拟节点的下标 idx
 	idx := sort.Search(len(m.keys), func(i int) bool {
 		return m.keys[i] >= hash

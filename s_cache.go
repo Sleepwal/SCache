@@ -16,10 +16,12 @@ func (f GetterFunc) Get(key string) ([]byte, error) {
 	return f(key)
 }
 
+// Group 负责与用户的交互，并且控制缓存值存储和获取的流程。
 type Group struct {
-	name      string
-	getter    Getter
-	mainCache cache
+	name       string
+	getter     Getter
+	mainCache  cache
+	peerPicker PeerPicker
 }
 
 var (
@@ -76,8 +78,32 @@ func (g *Group) Get(key string) (ByteView, error) {
 	return g.load(key)
 }
 
+func (g *Group) RegisterPeers(peers PeerPicker) {
+	if g.peerPicker != nil {
+		panic("RegisterPeerPicker called more than once")
+	}
+	g.peerPicker = peers
+}
+
 func (g *Group) load(key string) (value ByteView, err error) {
+	if g.peerPicker != nil {
+		if peer, ok := g.peerPicker.PickPeer(key); ok { // 根据key选择一个节点
+			if value, err := g.getFromPeer(peer, key); err == nil {
+				return value, nil
+			}
+			log.Println("[SCache] Failed to get form peer, ", err)
+		}
+	}
 	return g.getLocally(key)
+}
+
+// 从节点中获取值
+func (g *Group) getFromPeer(peer PeerGetter, key string) (ByteView, error) {
+	bytes, err := peer.Get(g.name, key)
+	if err != nil {
+		return ByteView{}, err
+	}
+	return ByteView{bytes}, nil
 }
 
 func (g *Group) getLocally(key string) (ByteView, error) {
