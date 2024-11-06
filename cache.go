@@ -1,7 +1,7 @@
-package sleepcache
+package main
 
 import (
-	"SleepCache/sleepcache/lru"
+	"SleepCache/lru"
 	"sync"
 )
 

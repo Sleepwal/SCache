@@ -1,7 +1,6 @@
 package main
 
 import (
-	"SleepCache/sleepcache"
 	"fmt"
 	"log"
 	"net/http"
@@ -14,7 +13,7 @@ var db = map[string]string{
 }
 
 func main() {
-	sleepcache.NewGroup("scores", 2<<10, sleepcache.GetterFunc(
+	NewGroup("scores", 2<<10, GetterFunc(
 		func(key string) ([]byte, error) {
 			log.Println("[SlowDB] search key", key)
 			if v, ok := db[key]; ok {
@@ -24,7 +23,7 @@ func main() {
 		}))
 
 	address := "localhost:9999"
-	handler := sleepcache.NewHttpPool(address)
+	handler := NewHttpPool(address)
 	log.Println("SleepCache is running at", address)
 	log.Fatal(http.ListenAndServe(address, handler))
 }

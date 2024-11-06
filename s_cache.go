@@ -1,4 +1,4 @@
-package sleepcache
+package main
 
 import (
 	"fmt"
